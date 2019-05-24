@@ -1,0 +1,91 @@
+﻿@model IEnumerable<VidlyExercice1.ViewModels.Movie>
+@{
+    ViewBag.Title = "Movies";
+}
+
+<h2>Movies</h2>
+
+<button class="btn btn-primary" onclick="location.href = '@Url.Action("New", "Movies")'">Add Movie</button>
+<br />
+<br />
+
+@*@if (!Model.Any())
+{
+    <text>We don't have any movies yet</text>
+}
+else
+{*@
+    <table id="movies" class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Movies</th>
+                <th>Genre</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+            @*@foreach (var movie in Model)
+            {
+                <tr>
+                    <td>@Html.ActionLink(@movie.Name, "Edit", "Movies", new { id = @movie.Id }, null)</td>
+                    <td>@movie.Genre.Name</td>
+                </tr>
+            }*@
+        </tbody>
+    </table>
+@*}*@
+
+
+@section scripts
+{
+    <script>
+        $(document).ready(function () {
+            //$("#movies").DataTable(); @* JQuery DataTable will get the Html records and build its own list of objects, which could cause performance issue in case of huge list *@
+
+            @* using Ajax to build the dataTable once from our Api(directly using Json object) *@
+            var table = $("#movies").DataTable({
+                ajax: {
+                    url: "api/moviesApi",
+                    dataSrc: ""                         @*not empty if we need to go through an object inside the Json main object *@
+                },
+                columns: [                              @* define the datatables columns based on Api Json return + render if necessary *@
+                    {
+                        data: "name",
+                        render: function(data, type, movie) {
+                            return "<a href='/movies/edit/" + movie.id + "'>" + movie.name + "</a>";
+                        }
+                    },
+                    {
+                        data: "genre.name"
+                        @* movieGenre.name not natively part of our Api. Need to add prop Genre of type MovieGenreDto to our MovieDto + add Mapper config + eager loading Api Controller *@
+                    },
+                    {
+                        data: "id",
+                        render: function(data) {
+                            return "<button class='btn-link js-delete' data-movie-id=" + data + ">Delete</button>";
+                        }
+                    }
+                ]
+
+            });
+
+            $("#movies").on("click", ".js-delete", function () {
+                var button = $(this);
+                bootbox.confirm("Are you sure you want to delete this movie ?",
+                    function(result) {
+                        if (result) {
+                            $.ajax({
+                                url: "/api/moviesApi/" + button.attr("data-movie-id"),
+                                method: "DELETE",
+                                success: function() {
+                                    table.row(button.parents("tr")).remove().draw();
+                                    // remove element from datatable and not just from the DOM using button.parents("tr").remove()
+                                }
+                            });
+                        }
+                    });
+
+            });
+        })
+    </script>
+}

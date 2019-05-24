@@ -1,0 +1,135 @@
+﻿@model dynamic
+
+@{
+    ViewBag.Title = "New rental Form";
+
+}
+
+<h2>New Rental Form</h2>
+
+
+<form id="newRental">
+    @*with Web Essentials plug-in - zenCoding div.form-group>label+input[type='text'].form-control goes to =>*@
+    <div class="form-group">
+        <label>Customer</label>
+        <div class="tt-container">
+            <input id="customer" name="customer" data-rule-validCustomer="true" required type="text" value="" class="form-control" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>Movie</label>
+        <div class="tt-container">
+            <input id="movie" name="movie" data-rule-atLeastAMovieSelected="true" type="text" value="" class="form-control" />
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4 col-sm-4">
+            <ul id="movies" class="list-group"></ul>
+        </div>
+    </div>
+    <br/>
+
+    <button class="btn btn-outline-primary">Submit</button>
+</form>
+
+@section scripts
+{
+    @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        $(document).ready(function () {
+
+            var vm = {
+                moviesIds: []
+            };
+
+            var customers = new Bloodhound({
+                datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+                queryTokenizer: Bloodhound.tokenizers.whitespace,
+                prefetch: '/api/customersapi',
+                //remote: {
+                //    url: '/api/customersapi?query=%QUERY',
+                //    wildcard: '%QUERY'
+                //}
+            });
+
+            $('#customer').typeahead({
+                minLength: 2,   /*l'autocompletion propose des résultat à partir du 3e caractère*/
+                highlight: true     /*les caractères qui matchent un résultat de la source de données sont en gras*/
+                },
+                {
+                    name: 'customers',
+                    display: 'name',
+                    source: customers
+                }).on("typeahead:select", function(e, customer) {
+                    vm.customerId = customer.id;
+                });
+
+            var movies = new Bloodhound({
+                datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+                queryTokenizer: Bloodhound.tokenizers.whitespace,
+                //prefetch: '/api/moviesapi',
+                remote: {
+                    url: '/api/moviesapi?query=%QUERY',
+                    wildcard: '%QUERY'
+                }
+            });
+
+            $('#movie').typeahead({
+                minLength: 2,
+                highlight: true
+            },
+            {
+                name: 'movies',
+                display: 'name',
+                source: movies
+            }).on("typeahead:select", function(e, movie) {
+                $("#movies").append("<li class='list-group-item'>" + movie.name + "</li>");
+
+                $("#movie").typeahead("val", "");   // reset the textbox value
+
+                vm.moviesIds.push(movie.id);     // envoyer l'élément selectionné dans l'objet vm (viewmodel)
+            });
+
+            $.validator.addMethod("validCustomer",
+                function() {
+                    return vm.customerId && vm.customerId !== 0;
+                }, "Please select a valid customer.");
+
+            $.validator.addMethod("atLeastAMovieSelected",
+                function() {
+                    return vm.moviesIds.length > 0;
+                }, "Please select at least one movie.");
+
+            var validator = $('#newRental').validate({
+                submitHandler: function() {
+
+                    $.ajax({
+                        url: "/api/newrentalapi",
+                        method: "post",
+                        data: vm
+                    }).done(function() {
+                        toastr.success("Rentals successfully recorded.");
+                        $("#customer").typeahead("val", "");
+                        $("#movie").typeahead("val", "");
+                        $("#movies").empty();
+
+                        vm = { moviesIds: [] };
+
+                        validator.resetForm();
+                    }).fail(function() {
+                        toastr.error("An error occured.");
+                    });
+
+                    return false;
+                }
+            });
+        });
+    </script>
+}
+
+@*Bloodhound est le moteur de suggestion derrière typeahead. Il encapsule toute la logique de l'autocompletion*@
+@*datumTokenizer = entre () le nom de la propriété du json obtenu*@
+@*remote url = passer l'url permettant de récupérer les données du customer + paramètre (à définir) qui prendra comme valeur %QUERY qui est la variable qui sera récupérée du champ input*@
+@*ligne 39 : reporter l'id du champ input qui sera sanctionné par l'autocomplétion'*@

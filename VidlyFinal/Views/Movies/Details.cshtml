@@ -1,0 +1,14 @@
+﻿@model VidlyExercice1.ViewModels.Movie
+@{
+    ViewBag.Title = "Details";
+}
+
+<h3>@Model.Name</h3>
+<ul>
+    <li>Genre : @Model.Genre.Name</li>
+    <li>Release Date : @Model.ReleaseDate.ToString("D")</li>
+    <li>Date Added : @Model.DateAdded.ToString("D")</li>
+    <li>Number in Stock : @Model.NumberInStock</li>
+</ul>
+
+

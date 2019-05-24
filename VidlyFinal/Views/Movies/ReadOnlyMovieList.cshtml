@@ -1,0 +1,50 @@
+﻿@model IEnumerable<VidlyExercice1.ViewModels.Movie>
+@{
+    ViewBag.Title = "Movies";
+}
+
+<h2>Movies</h2>
+
+<table id="movies" class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Movies</th>
+            <th>Genre</th>
+        </tr>
+    </thead>
+    <tbody>
+
+    </tbody>
+</table>
+
+
+
+@section scripts
+{
+    <script>
+        $(document).ready(function () {
+            //$("#movies").DataTable(); @* JQuery DataTable will get the Html records and build its own list of objects, which could cause performance issue in case of huge list *@
+
+            @* using Ajax to build the dataTable once from our Api(directly using Json object) *@
+            var table = $("#movies").DataTable({
+                ajax: {
+                    url: "api/moviesApi",
+                    dataSrc: ""                         @*not empty if we need to go through an object inside the Json main object *@
+                },
+                columns: [                              @* define the datatables columns based on Api Json return + render if necessary *@
+                    {
+                        data: "name",
+                        render: function(data, type, movie) {
+                            return "<a href='/movies/details/" + movie.id + "'>" + movie.name + "</a>";
+                        }
+                    },
+                    {
+                        data: "genre.name"
+                        @* movieGenre.name not natively part of our Api. Need to add prop Genre of type MovieGenreDto to our MovieDto + add Mapper config + eager loading Api Controller *@
+                    }
+                ]
+
+            });
+        })
+    </script>
+}
